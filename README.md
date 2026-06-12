@@ -21,16 +21,6 @@ startup.bat
 
 `startup.bat` is the setup and launch script. It checks whether .NET 8 SDK is installed, tries to install it with `winget` if it is missing, restores dependencies, builds the app, and starts OpenAs.
 
-## For AI Agents
-
-Before editing or reviewing this project, read:
-
-```text
-prompt.md
-```
-
-That file contains the product goal, safety rules, architecture notes, registry constraints, build commands, and known design decisions for AI/code agents.
-
 ## What It Does
 
 - Maps a custom extension to a real file type for the current Windows user.
