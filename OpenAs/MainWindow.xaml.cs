@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     private readonly AssociationRegistryService registryService = new();
     private readonly IconStorageService iconStorageService = new();
     private readonly FileSignatureService signatureService = new();
+    private readonly InstalledFileFormatService installedFileFormatService = new();
     private readonly ObservableCollection<AssociationRow> associations = new();
     private TextBox ExtensionInput => FindRequiredName<TextBox>("ExtensionTextBox");
     private ComboBox FormatSelector => FindRequiredName<ComboBox>("FormatComboBox");
@@ -26,7 +27,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        FormatSelector.ItemsSource = KnownFileFormats.All;
+        FormatSelector.ItemsSource = installedFileFormatService.GetAvailableFormats();
         FormatSelector.SelectedIndex = 0;
         AssociationsTable.ItemsSource = associations;
         LoadAssociations();

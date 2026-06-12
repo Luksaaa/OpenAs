@@ -8,7 +8,8 @@ public partial class App : Application
 {
     private async void Application_Startup(object sender, StartupEventArgs e)
     {
-        if (FileOpenRequest.TryParse(e.Args, out var request))
+        var installedFileFormatService = new InstalledFileFormatService();
+        if (FileOpenRequest.TryParse(e.Args, installedFileFormatService.Find, out var request))
         {
             var opener = new FileOpenService(new FileSignatureService());
             await opener.OpenAsync(request);

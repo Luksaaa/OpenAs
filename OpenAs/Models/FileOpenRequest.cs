@@ -2,7 +2,7 @@ namespace OpenAs.Models;
 
 public sealed record FileOpenRequest(string Path, FileFormat Format)
 {
-    public static bool TryParse(string[] args, out FileOpenRequest request)
+    public static bool TryParse(string[] args, Func<string, FileFormat?> formatResolver, out FileOpenRequest request)
     {
         request = default!;
 
@@ -18,7 +18,7 @@ public sealed record FileOpenRequest(string Path, FileFormat Format)
             return false;
         }
 
-        var format = KnownFileFormats.Find(args[formatIndex + 1]);
+        var format = formatResolver(args[formatIndex + 1]);
         if (format is null)
         {
             return false;

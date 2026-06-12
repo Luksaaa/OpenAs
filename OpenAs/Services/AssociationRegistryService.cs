@@ -11,6 +11,7 @@ public sealed class AssociationRegistryService
     private const string PreviousProgIdValueName = "PreviousProgId";
     private const string IconLocationValueName = "IconLocation";
     private readonly FileTypeIconService fileTypeIconService = new();
+    private readonly InstalledFileFormatService installedFileFormatService = new();
 
     public IReadOnlyList<FileAssociation> GetAssociations()
     {
@@ -28,7 +29,7 @@ public sealed class AssociationRegistryService
             var progId = associationKey?.GetValue("ProgId") as string;
             var previousProgId = associationKey?.GetValue(PreviousProgIdValueName) as string;
             var iconLocation = associationKey?.GetValue(IconLocationValueName) as string;
-            var format = formatId is null ? null : KnownFileFormats.Find(formatId);
+            var format = formatId is null ? null : installedFileFormatService.Find(formatId);
 
             if (format is not null && progId is not null)
             {

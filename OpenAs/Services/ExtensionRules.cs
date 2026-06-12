@@ -9,6 +9,8 @@ public static class ExtensionRules
         ".dll", ".sys", ".drv"
     };
 
+    public static bool IsBlocked(string extension) => BlockedExtensions.Contains(extension);
+
     public static string Normalize(string value)
     {
         var extension = value.Trim();

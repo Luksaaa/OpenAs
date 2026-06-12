@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="OpenAs" Height="720" Width="1040" MinHeight="650" MinWidth="900"
+        Icon="Assets/icon.ico"
         Background="#F4F6F8" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <SolidColorBrush x:Key="TextBrush" Color="#172033" />
@@ -137,7 +138,9 @@
                     <TextBox x:Name="ExtensionTextBox" Grid.Row="1" Grid.Column="0" Margin="0,0,16,0"
                              ToolTip="Example: .finger" />
                     <ComboBox x:Name="FormatComboBox" Grid.Row="1" Grid.Column="1" Margin="0,0,16,0"
-                              DisplayMemberPath="DisplayName" SelectedValuePath="Id" />
+                              DisplayMemberPath="DisplayName" SelectedValuePath="Id"
+                              IsTextSearchEnabled="True" TextSearch.TextPath="DisplayName"
+                              MaxDropDownHeight="320" />
                     <Button Grid.Row="1" Grid.Column="2" Content="Add mapping" Style="{StaticResource PrimaryButton}"
                             Click="AddMapping_Click" VerticalAlignment="Top" />
 
