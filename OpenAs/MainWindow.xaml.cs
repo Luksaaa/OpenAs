@@ -106,7 +106,7 @@ public partial class MainWindow : Window
 
             var fileName = System.IO.Path.GetFileName(dialog.FileName);
             TestResultText.Text = $"{fileName} looks like {detectedFormat.DisplayName}. You can map a custom extension to {detectedFormat.Extension}.";
-            FormatSelector.SelectedItem = detectedFormat;
+            FormatSelector.SelectedValue = detectedFormat.Id;
             SetStatus($"Detected {detectedFormat.DisplayName}.", isError: false);
         }
         catch (Exception ex)

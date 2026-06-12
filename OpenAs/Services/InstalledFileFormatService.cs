@@ -1,11 +1,18 @@
 using Microsoft.Win32;
 using OpenAs.Models;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace OpenAs.Services;
 
 public sealed class InstalledFileFormatService
 {
     private const int MaxInstalledFormats = 350;
+    private const int SFalse = 1;
+    private const int AssocFNone = 0;
+    private const int AssocStrExecutable = 2;
+    private const int AssocStrFriendlyDocName = 3;
+    private const int AssocStrFriendlyAppName = 4;
 
     public IReadOnlyList<FileFormat> GetAvailableFormats()
     {
@@ -22,7 +29,10 @@ public sealed class InstalledFileFormatService
             .Take(MaxInstalledFormats)
             .ToList();
 
-        return KnownFileFormats.All.Concat(installedFormats).ToList();
+        return KnownFileFormats.All
+            .Select(AddEffectiveAppToDisplayName)
+            .Concat(installedFormats)
+            .ToList();
     }
 
     public FileFormat? Find(string id)
@@ -30,7 +40,7 @@ public sealed class InstalledFileFormatService
         var knownFormat = KnownFileFormats.Find(id);
         if (knownFormat is not null)
         {
-            return knownFormat;
+            return AddEffectiveAppToDisplayName(knownFormat);
         }
 
         if (!id.StartsWith("installed:", StringComparison.OrdinalIgnoreCase))
@@ -44,7 +54,13 @@ public sealed class InstalledFileFormatService
             return null;
         }
 
-        return ReadInstalledFormat("." + extensionName);
+        var extension = "." + extensionName;
+        var knownByExtension = KnownFileFormats.All.FirstOrDefault(format =>
+            string.Equals(format.Extension, extension, StringComparison.OrdinalIgnoreCase));
+
+        return knownByExtension is null
+            ? ReadInstalledFormat(extension)
+            : AddEffectiveAppToDisplayName(knownByExtension);
     }
 
     private static FileFormat? ReadInstalledFormat(string extension)
@@ -60,24 +76,27 @@ public sealed class InstalledFileFormatService
             return null;
         }
 
-        var progId = extensionKey.GetValue("") as string;
-        if (string.IsNullOrWhiteSpace(progId) || progId.StartsWith("OpenAs", StringComparison.OrdinalIgnoreCase))
+        var effectiveExecutable = QueryAssociationString(extension, AssocStrExecutable);
+        if (string.IsNullOrWhiteSpace(effectiveExecutable))
         {
             return null;
         }
 
-        if (!HasOpenCommand(progId))
+        var progId = extensionKey.GetValue("") as string;
+        if (!string.IsNullOrWhiteSpace(progId) && progId.StartsWith("OpenAs", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
 
         var contentType = extensionKey.GetValue("Content Type") as string;
         var perceivedType = extensionKey.GetValue("PerceivedType") as string;
-        var friendlyName = ReadDefaultValue(progId);
+        var friendlyName = QueryAssociationString(extension, AssocStrFriendlyDocName)
+            ?? (string.IsNullOrWhiteSpace(progId) ? null : ReadDefaultValue(progId));
+        var appName = QueryAssociationString(extension, AssocStrFriendlyAppName);
 
         return new FileFormat(
             CreateId(extension),
-            CreateDisplayName(extension, friendlyName),
+            CreateDisplayName(extension, friendlyName, appName),
             extension,
             string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType,
             string.IsNullOrWhiteSpace(perceivedType) ? "document" : perceivedType,
@@ -91,27 +110,68 @@ public sealed class InstalledFileFormatService
         && value.Skip(1).All(character => char.IsAsciiLetterOrDigit(character))
         && !ExtensionRules.IsBlocked(value);
 
-    private static bool HasOpenCommand(string progId)
-    {
-        using var commandKey = Registry.ClassesRoot.OpenSubKey($@"{progId}\shell\open\command");
-        return !string.IsNullOrWhiteSpace(commandKey?.GetValue("") as string);
-    }
-
     private static string? ReadDefaultValue(string subKeyPath)
     {
         using var key = Registry.ClassesRoot.OpenSubKey(subKeyPath);
         return key?.GetValue("") as string;
     }
 
-    private static string CreateDisplayName(string extension, string? friendlyName)
+    private static FileFormat AddEffectiveAppToDisplayName(FileFormat format)
     {
-        if (!string.IsNullOrWhiteSpace(friendlyName))
+        var appName = QueryAssociationString(format.Extension, AssocStrFriendlyAppName);
+        if (string.IsNullOrWhiteSpace(appName))
         {
-            return $"{friendlyName} ({extension})";
+            return format;
         }
 
-        return $"{extension.TrimStart('.').ToUpperInvariant()} file ({extension})";
+        return format with
+        {
+            DisplayName = $"{format.DisplayName} ({format.Extension}) - {appName}"
+        };
+    }
+
+    private static string CreateDisplayName(string extension, string? friendlyName, string? appName)
+    {
+        var baseName = string.IsNullOrWhiteSpace(friendlyName)
+            ? $"{extension.TrimStart('.').ToUpperInvariant()} file"
+            : friendlyName;
+
+        if (!string.IsNullOrWhiteSpace(appName))
+        {
+            return $"{baseName} ({extension}) - {appName}";
+        }
+
+        return $"{baseName} ({extension})";
+    }
+
+    private static string? QueryAssociationString(string extension, int associationString)
+    {
+        var length = 0u;
+        var result = AssocQueryString(AssocFNone, associationString, extension, null, null, ref length);
+        if (result != SFalse || length == 0)
+        {
+            return null;
+        }
+
+        var builder = new StringBuilder((int)length);
+        result = AssocQueryString(AssocFNone, associationString, extension, null, builder, ref length);
+        if (result < 0)
+        {
+            return null;
+        }
+
+        var value = builder.ToString();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private static string CreateId(string extension) => $"installed:{extension.TrimStart('.').ToLowerInvariant()}";
+
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    private static extern int AssocQueryString(
+        int flags,
+        int str,
+        string pszAssoc,
+        string? pszExtra,
+        StringBuilder? pszOut,
+        ref uint pcchOut);
 }
