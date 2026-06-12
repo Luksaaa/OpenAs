@@ -3,6 +3,7 @@ using OpenAs.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace OpenAs;
@@ -13,12 +14,14 @@ public partial class MainWindow : Window
     private readonly IconStorageService iconStorageService = new();
     private readonly FileSignatureService signatureService = new();
     private readonly InstalledFileFormatService installedFileFormatService = new();
+    private readonly List<FileFormat> availableFormats;
     private readonly ObservableCollection<AssociationRow> associations = new();
     private TextBox ExtensionInput => FindRequiredName<TextBox>("ExtensionTextBox");
     private ComboBox FormatSelector => FindRequiredName<ComboBox>("FormatComboBox");
     private DataGrid AssociationsTable => FindRequiredName<DataGrid>("AssociationsGrid");
     private TextBlock StatusText => FindRequiredName<TextBlock>("StatusTextBlock");
     private TextBox IconPathInput => FindRequiredName<TextBox>("IconPathTextBox");
+    private TextBox FormatSearchInput => FindRequiredName<TextBox>("FormatSearchTextBox");
     private TextBlock TestResultText => FindRequiredName<TextBlock>("TestResultTextBlock");
     private RadioButton DefaultIconRadio => FindRequiredName<RadioButton>("DefaultIconRadioButton");
     private RadioButton CustomIconRadio => FindRequiredName<RadioButton>("CustomIconRadioButton");
@@ -27,8 +30,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        FormatSelector.ItemsSource = installedFileFormatService.GetAvailableFormats();
+        availableFormats = installedFileFormatService.GetAvailableFormats().ToList();
+        FormatSelector.ItemsSource = availableFormats;
         FormatSelector.SelectedIndex = 0;
+        CollectionViewSource.GetDefaultView(FormatSelector.ItemsSource).Filter = FilterFormat;
         AssociationsTable.ItemsSource = associations;
         LoadAssociations();
     }
@@ -78,6 +83,17 @@ public partial class MainWindow : Window
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => LoadAssociations();
+
+    private void FormatSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var view = CollectionViewSource.GetDefaultView(FormatSelector.ItemsSource);
+        view.Refresh();
+
+        if (FormatSelector.SelectedItem is not FileFormat selectedFormat || !FilterFormat(selectedFormat))
+        {
+            FormatSelector.SelectedItem = view.Cast<FileFormat>().FirstOrDefault();
+        }
+    }
 
     private async void TestFile_Click(object sender, RoutedEventArgs e)
     {
@@ -212,6 +228,25 @@ public partial class MainWindow : Window
         StatusText.Foreground = isError
             ? Brushes.Firebrick
             : Brushes.DarkSlateGray;
+    }
+
+    private bool FilterFormat(object item)
+    {
+        if (item is not FileFormat format)
+        {
+            return false;
+        }
+
+        var query = FormatSearchInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        return format.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || format.Extension.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || format.MimeType.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || format.PerceivedType.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     private string? SaveCustomIconIfSelected(string extension)
