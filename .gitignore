@@ -1,0 +1,17 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+_build_bin/
+_build_obj/
+_verify_bin/
+
+# .NET
+TestResults/
+*.nupkg
