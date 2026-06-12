@@ -2,6 +2,13 @@
 
 You are working on OpenAs, a C#/.NET 8 WPF Windows desktop utility.
 
+## First Steps For An AI Agent
+
+1. Read this `prompt.md` before making code changes.
+2. Use `README.md` for user-facing setup and usage behavior.
+3. Use `startup.bat` as the user setup/run path.
+4. Keep generated build output, `.vs`, `bin`, `obj`, and `_verify_bin` out of source control.
+
 ## Product Goal
 
 OpenAs lets a Windows user map a custom file extension to a real file type.
@@ -43,7 +50,8 @@ AssociationRegistryService
   Saves/removes per-user file associations and OpenAs metadata.
 
 InstalledFileFormatService
-  Reads installed Windows file types and adds them to the "Open as" dropdown.
+  Reads installed Windows file types, uses effective Windows associations where possible,
+  and adds them to the "Open as" dropdown.
 
 FileSignatureService
   Checks magic bytes for known formats.
@@ -89,6 +97,12 @@ App.xaml.cs -> FileOpenRequest -> FileOpenService
 
 ## Build
 
+User setup/run path:
+
+```bat
+startup.bat
+```
+
 Use:
 
 ```bat
@@ -109,3 +123,5 @@ dotnet build OpenAs\OpenAs.csproj -p:UseAppHost=false -p:OutputPath=..\_verify_b
 - Additional installed Windows file types may not have signature checks, so they are opened by temporary typed copy only.
 - Custom icons are copied to `%AppData%\OpenAs\Icons`.
 - Default icons are resolved from Windows' effective file association data.
+- The "Open as" selector has a separate search box. Do not auto-open the ComboBox while typing because that steals focus in WPF.
+- Known formats such as MP4 should stay built-in when reliable behavior matters across different PCs.

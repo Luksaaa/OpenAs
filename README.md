@@ -11,6 +11,26 @@ photo.finger  -> opens like photo.jpg
 
 The file content stays the same. OpenAs only teaches Windows how to treat a custom extension.
 
+## For Users
+
+If you only want to run the app, use:
+
+```bat
+startup.bat
+```
+
+`startup.bat` is the setup and launch script. It checks whether .NET 8 SDK is installed, tries to install it with `winget` if it is missing, restores dependencies, builds the app, and starts OpenAs.
+
+## For AI Agents
+
+Before editing or reviewing this project, read:
+
+```text
+prompt.md
+```
+
+That file contains the product goal, safety rules, architecture notes, registry constraints, build commands, and known design decisions for AI/code agents.
+
 ## What It Does
 
 - Maps a custom extension to a real file type for the current Windows user.
@@ -30,7 +50,7 @@ The file content stays the same. OpenAs only teaches Windows how to treat a cust
 
 ## Quick Start
 
-Run:
+Run the setup/startup script from the repository root:
 
 ```bat
 startup.bat
@@ -43,6 +63,8 @@ Microsoft.DotNet.SDK.8
 ```
 
 Then it restores, builds, and runs the WPF app.
+
+If Windows blocks the script, right-click `startup.bat`, choose **Properties**, unblock it if that option appears, then run it again.
 
 ## Manual Run
 
